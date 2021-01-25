@@ -1,3 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ChezOznee</string>
+    <string name="starter">Starter</string>
+    <string name="dishes">Dishes</string>
+    <string name="desserts">Desserts</string>
+    <string name="title">Welcome in my restaurant</string>
 </resources>
