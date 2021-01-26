@@ -1,8 +1,8 @@
-
 <resources>
-    <string name="app_name">ChezOznee</string>
-    <string name="starter">Starter</string>
-    <string name="dishes">Dishes</string>
-    <string name="desserts">Desserts</string>
-    <string name="title">Welcome in my restaurant</string>
+    <string name="app_name" translatable="false">ChezOznee</string>
+    <string name="starter" translatable="false">Starter</string>
+    <string name="main" translatable="false">Main</string>
+    <string name="dessert" translatable="false">Dessert</string>
+    <string name="textview" translatable="false">TextView1</string>
+    <string name="activityTitle" translatable="false">activityTitle</string>
 </resources>
