@@ -1,17 +1,38 @@
 package fr.isen.ramone.androiderestaurant.category
 
-import android.content.pm.ApplicationInfo.getCategoryTitle
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import androidx.lifecycle.Transformations.map
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.android.volley.Request
+import com.android.volley.Response
+import com.android.volley.toolbox.JsonObjectRequest
+import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
+import com.google.gson.GsonBuilder
 import fr.isen.ramone.androiderestaurant.HomeActivity
 import fr.isen.ramone.androiderestaurant.R
 import fr.isen.ramone.androiderestaurant.databinding.ActivityCategoryBinding
+import fr.isen.ramone.androiderestaurant.databinding.DishesCellBinding
+import fr.isen.ramone.androiderestaurant.models.Ingredient
+import fr.isen.ramone.androiderestaurant.models.Item
+import fr.isen.ramone.androiderestaurant.models.MenuResult
 import org.json.JSONObject
 
 enum class ItemType {
-    STARTER, MAIN, DESSERT
+    STARTER, MAIN, DESSERT;
+
+    companion object {
+        fun categoryTitle(item: ItemType?) : String {
+            return when(item) {
+                STARTER -> "Entrées"
+                MAIN -> "Plats"
+                DESSERT -> "Desserts"
+                else -> ""
+            }
+        }
+    }
 }
 
 class CategoryActivity : AppCompatActivity() {
@@ -26,50 +47,76 @@ class CategoryActivity : AppCompatActivity() {
         val selectedItem = intent.getSerializableExtra(HomeActivity.CATEGORY_NAME) as? ItemType
         binding.categoryTitle.text = getCategoryTitle(selectedItem)
 
-        loadList()
+        loadList(listOf<Item>())
+        makeRequest(selectedItem)
 
         Log.d("lifecycle", "onCreate")
     }
 
-    private fun makeRequest() {
+    private fun makeRequest(selectItem: ItemType?) {
         val queue = Volley.newRequestQueue(this)
-        val url = NetworkConstant.BASE_URL + NetworkConstant.PATH_MENU
-
-        val jsonData = JSONObject()
-        jsonData.put(NetworkConstant.ID_SHOP, "1")
-
-        var request = JsonObjectRequest(
+        val jsondata= JSONObject()
+        jsondata.put("id_shop", 1)
+        val url = "http://test.api.catering.bluecodegames.com/menu"
+        val request = JsonObjectRequest(
             Request.Method.POST,
             url,
-            jsonData,
+            jsondata,
             { response ->
+                //success
                 Log.d("request", response.toString(2))
-                val menuResult = GsonBuilder().create().fromJson(response.toString(), MenuResult::class.java)
-                menuResult.data.forEach {
-                    Log.d("request", it.name)
-                }
+                val menu = GsonBuilder().create().fromJson(response.toString(), MenuResult::class.java)
+                val items = menu.data.firstOrNull{
+                    it.name == ItemType.categoryTitle(selectItem)}
+                if(items != null)
+                    loadList(items?.items)
+                else
+                    Log.d("CategoryActivity", "no category")
+                /*menu.data.forEach{
+                    Log.d("Request", it.name)
+                }*/
             },
             { error ->
+                //error
                 error.message?.let {
-                    Log.d("request", it)
+                    Log.d("Request", it)
                 } ?: run {
-                    Log.d("request", error.toString())
+                    Log.d("Request", error.toString())
                 }
+                //Log.d("Request", error.localizedMessage)
             }
         )
+        /*val request = StringRequest(
+            Request.Method.GET,
+            url,
+            Response.Listener { response ->
+                //success
+                Log.d("Request", response)
+            },
+            Response.ErrorListener { error ->
+                //error
+                Log.d("Request", error.localizedMessage )
+            }
+        )*/
+                queue.add(request)
+    }
 
-    private fun loadList() {
-        var entries = listOf<String>("salade", "jambon", "boeuf", "glace")
-        val adapter = CategoryAdapter(entries)
-        binding.recyclerView.layoutManager = LinearLayoutManager(this)
-        binding.recyclerView.adapter = adapter
+    private fun loadList(item: List<Item>) {
+        //val titles = list.map{it.name} //conversion
+        item?.let {
+            val adapter = CategoryAdapter(it) { dish ->
+                Log.d("dish", "selected dish ${dish.name}")
+            }
+            binding.recyclerView.layoutManager = LinearLayoutManager(this)
+            binding.recyclerView.adapter = adapter
+        }
     }
 
     private fun getCategoryTitle(item: ItemType?): String {
         return when(item) {
             ItemType.STARTER -> getString(R.string.starter)
             ItemType.MAIN -> getString(R.string.main)
-            ItemType.DESSERT -> getString(R.string.dessert)
+            ItemType.DESSERT -> "Desserts"
             else -> ""
         }
     }
@@ -87,10 +134,5 @@ class CategoryActivity : AppCompatActivity() {
     override fun onDestroy() {
         Log.d("lifecycle", "onDestroy")
         super.onDestroy()
-    }
-
-    private fun makeRequest(){
-        val queue = Volley.newRequestQueue(this)
-
     }
 }

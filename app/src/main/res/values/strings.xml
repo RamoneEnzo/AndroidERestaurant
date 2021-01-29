@@ -3,6 +3,6 @@
     <string name="starter" translatable="false">Starter</string>
     <string name="main" translatable="false">Main</string>
     <string name="dessert" translatable="false">Dessert</string>
-    <string name="textview" translatable="false">TextView1</string>
+    <string name="textview" translatable="false">Bienvenu chez android restaurant</string>
     <string name="activityTitle" translatable="false">activityTitle</string>
 </resources>
