@@ -1,23 +1,20 @@
 package fr.isen.ramone.androiderestaurant.category
 
+import android.content.Context
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
-import androidx.lifecycle.Transformations.map
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.android.volley.Request
-import com.android.volley.Response
 import com.android.volley.toolbox.JsonObjectRequest
-import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.google.gson.GsonBuilder
 import fr.isen.ramone.androiderestaurant.HomeActivity
 import fr.isen.ramone.androiderestaurant.R
 import fr.isen.ramone.androiderestaurant.databinding.ActivityCategoryBinding
-import fr.isen.ramone.androiderestaurant.databinding.DishesCellBinding
-import fr.isen.ramone.androiderestaurant.models.Ingredient
-import fr.isen.ramone.androiderestaurant.models.Item
-import fr.isen.ramone.androiderestaurant.models.MenuResult
+import fr.isen.ramone.androiderestaurant.network.Item
+import fr.isen.ramone.androiderestaurant.network.MenuResult
+import fr.isen.ramone.androiderestaurant.network.NetworkConstant
 import org.json.JSONObject
 
 enum class ItemType {
@@ -34,6 +31,7 @@ enum class ItemType {
         }
     }
 }
+
 
 class CategoryActivity : AppCompatActivity() {
 
@@ -54,54 +52,38 @@ class CategoryActivity : AppCompatActivity() {
     }
 
     private fun makeRequest(selectItem: ItemType?) {
-        val queue = Volley.newRequestQueue(this)
-        val jsondata= JSONObject()
-        jsondata.put("id_shop", 1)
-        val url = "http://test.api.catering.bluecodegames.com/menu"
-        val request = JsonObjectRequest(
-            Request.Method.POST,
-            url,
-            jsondata,
-            { response ->
-                //success
-                Log.d("request", response.toString(2))
-                val menu = GsonBuilder().create().fromJson(response.toString(), MenuResult::class.java)
-                val items = menu.data.firstOrNull{
-                    it.name == ItemType.categoryTitle(selectItem)}
-                if(items != null)
-                    loadList(items?.items)
-                else
-                    Log.d("CategoryActivity", "no category")
-                /*menu.data.forEach{
-                    Log.d("Request", it.name)
-                }*/
-            },
-            { error ->
-                //error
-                error.message?.let {
-                    Log.d("Request", it)
-                } ?: run {
-                    Log.d("Request", error.toString())
-                }
-                //Log.d("Request", error.localizedMessage)
-            }
-        )
-        /*val request = StringRequest(
-            Request.Method.GET,
-            url,
-            Response.Listener { response ->
-                //success
-                Log.d("Request", response)
-            },
-            Response.ErrorListener { error ->
-                //error
-                Log.d("Request", error.localizedMessage )
-            }
-        )*/
-                queue.add(request)
+        resultFromCache()?.let{
+            //la requete est en cache
+            parseResult(it, selectItem)
+        }?: run {
+            //la requete n'est pas en cache
+            val queue = Volley.newRequestQueue(this)
+            val url = NetworkConstant.BASE_URL + NetworkConstant.PATH_MENU
+
+            val jsonData = JSONObject()
+            jsonData.put(NetworkConstant.ID_SHOP, "1")
+
+            var request = JsonObjectRequest(
+                    Request.Method.POST,
+                    url,
+                    jsonData,
+                    { response ->
+                        cacheResult(response.toString())
+                        parseResult(response.toString(), selectItem)
+                    },
+                    { error ->
+                        error.message?.let {
+                            Log.d("request", it)
+                        } ?: run {
+                            Log.d("request", error.toString())
+                        }
+                    }
+            )
+            queue.add(request)
+        }
     }
 
-    private fun loadList(item: List<Item>) {
+    private fun loadList(item: List<Item>?) {
         //val titles = list.map{it.name} //conversion
         item?.let {
             val adapter = CategoryAdapter(it) { dish ->
@@ -110,6 +92,24 @@ class CategoryActivity : AppCompatActivity() {
             binding.recyclerView.layoutManager = LinearLayoutManager(this)
             binding.recyclerView.adapter = adapter
         }
+    }
+
+    private fun resultFromCache():String? {
+        val sharedPreferences = getSharedPreferences(UPN, Context.MODE_PRIVATE)
+        return sharedPreferences.getString(RC, null)
+    }
+
+    private fun cacheResult(response: String) {
+        val sharedPreferences = getSharedPreferences(UPN, Context.MODE_PRIVATE)
+        val editor = sharedPreferences.edit()
+        editor.putString(RC, response)
+        editor.apply()
+    }
+
+    private fun parseResult(response: String, selectedItem: ItemType?) {
+        val menuResult = GsonBuilder().create().fromJson(response.toString(), MenuResult::class.java)
+        val items = menuResult.data.firstOrNull(){it.name == ItemType.categoryTitle(selectedItem)}
+        loadList(items?.items)
     }
 
     private fun getCategoryTitle(item: ItemType?): String {
@@ -134,5 +134,10 @@ class CategoryActivity : AppCompatActivity() {
     override fun onDestroy() {
         Log.d("lifecycle", "onDestroy")
         super.onDestroy()
+    }
+
+    companion object {
+        const val UPN ="USER_PREFERENCES_NAME"
+        const val RC = "REQUEST_CACHE"
     }
 }

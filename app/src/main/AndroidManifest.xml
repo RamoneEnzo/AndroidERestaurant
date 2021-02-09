@@ -12,7 +12,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.AndroidERestaurant"
         android:usesCleartextTraffic="true">
-        <activity android:name=".DetailActivity"></activity>
+        <activity android:name=".detail.PhotoFragment"></activity>
+        <activity android:name=".detail.DetailActivity" />
         <activity android:name=".category.CategoryActivity" />
         <activity android:name=".category.ActivityCategory" />
         <activity android:name=".categoryActivity" />

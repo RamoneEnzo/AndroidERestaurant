@@ -7,7 +7,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.squareup.picasso.Picasso
 import fr.isen.ramone.androiderestaurant.databinding.DishesCellBinding
-import fr.isen.ramone.androiderestaurant.models.Item
+import fr.isen.ramone.androiderestaurant.network.Item
 
 class CategoryAdapter(private val entries: List<Item>,
                       private val entryClickListener: (Item) -> Unit)
@@ -39,7 +39,7 @@ class CategoryAdapter(private val entries: List<Item>,
             priceView.text = "${dish.prices.first().price} €" // dish.prices.first().price + " €"
 
             Picasso.get()
-                    .load(dish.getFirstPicture())
+                    .load(dish.getThumbnailUrl())
                     .resize(400,200)
                     .into(imageView)
         }
